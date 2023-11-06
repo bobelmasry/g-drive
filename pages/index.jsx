@@ -28,7 +28,7 @@ const Home = () => {
 
   useEffect(() => {
     async function getFolders() {
-      let resultList = 'hi';
+      let resultList = [];
       try {
         resultList = await pb.collection('folders').getList(1, 50);
       } catch (error) {
@@ -44,10 +44,7 @@ const Home = () => {
   return (
     <>
     <Head>
-    <title>Login or Signup | teachmegcse</title>
-    <meta name="description" content="Login or Signup to Teachmegcse"></meta>
-    <meta name="keywords" content="teachmegcse, teach me gcse, A-level revision notes, A-level past papers, A-level topic questions, 
-    A-level math past papers, A-level physics past papers, A-level chemistry past papers"></meta>
+    <title>{session ? "root" : "login or sign up"}</title>
   </Head>
     <div className="flex justify-center">
       <div className="w-3/4 sm:w-2/4 md:w-1/4 mt-36">
@@ -114,9 +111,12 @@ const Home = () => {
             } else {
               // Render files within the "root" folder
               return folder.files.map((file, index) => (
-                <div key={index} className='flex bg-blue-600 p-4 m-4 rounded rounded-xl'>
-                  <p className='ml-6 mt-1 text-2xl font-semibold'>{file}</p>
+                <Link key={index} href={`http://127.0.0.1:8090/api/files/folders/${folder.id}/${file}`}>
+                <div className='flex bg-blue-600 p-4 m-4 rounded rounded-xl'>
+                  <Image src="/file.png" height={60} width={60} alt='file icon' />
+                  <p className='ml-4 mt-1 text-2xl font-semibold'>{file}</p>
                 </div>
+                </Link>
               ));
             }
           })}
