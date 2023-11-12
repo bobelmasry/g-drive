@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import PocketBase from 'pocketbase';
 import Image from 'next/image';
 import Link from 'next/link';
+import AddFile from '@/components/addFile';
+import DeleteFile from '@/components/deleteFile';
 
 const Home = () => {
   const pb = new PocketBase('http://127.0.0.1:8090');
@@ -14,7 +16,7 @@ const Home = () => {
   const [folders, setFolders] = useState([]);
 
   async function submitForm(event) {
-    event.preventDefault(); // Prevent the form from submitting
+    event.preventDefault();
 
     try {
       const authData = await pb.collection('users').authWithPassword(email, password);
@@ -22,11 +24,11 @@ const Home = () => {
       setSession(true);
     } catch (error) {
       console.error('Authentication error:', error);
-      // Handle authentication error here (e.g., show an error message).
     }
   }
 
   useEffect(() => {
+    // needs to fix to get only folders that belong to the current user
     async function getFolders() {
       let resultList = [];
       try {
@@ -40,7 +42,6 @@ const Home = () => {
     getFolders();
   }, [id]);
 
-  console.log(folders);
   return (
     <>
     <Head>
@@ -61,12 +62,12 @@ const Home = () => {
             type="email"
             id="email"
             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="name@flowbite.com"
+            placeholder="name@email.com"
             required=""
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-        <div className="mb-6">
+        <div className="mb-6 mt-4">
           <label
             htmlFor="password"
             className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -110,16 +111,32 @@ const Home = () => {
               );
             } else {
               // Render files within the "root" folder
-              return folder.files.map((file, index) => (
-                <Link key={index} href={`http://127.0.0.1:8090/api/files/folders/${folder.id}/${file}`}>
-                <div className='flex bg-blue-600 p-4 m-4 rounded rounded-xl'>
-                  <Image src="/file.png" height={60} width={60} alt='file icon' />
-                  <p className='ml-4 mt-1 text-2xl font-semibold'>{file}</p>
+              // also must add ability to delete files and folders and maybe to rename folders
+              return folder.files.map((file, index) => {
+              // Split the file string by '_' to separate the filename and the random part
+              const filename = file.split('_')[0];
+              const extension = "." + file.split('.')[1];
+              // The sanitized filename is the first part after splitting
+              const sanitizedFilename = filename + extension;
+
+              return (
+                <div key={index} className='flex ml-4'>
+                <Link  href={`http://127.0.0.1:8090/api/files/folders/${folder.id}/${file}?thumb=100x300`}>
+                  <div className='flex bg-blue-600 p-4 mt-4 mb-4 rounded rounded-xl'>
+                    <Image src="/file.png" height={60} width={60} alt='file icon' />
+                    <p className='ml-4 mt-1 text-2xl font-semibold'>{sanitizedFilename}</p>
+                  </div>
+                  </Link>
+
+                  <div className="mt-8 ml-6">
+                    <Image className='hover:cursor-pointer' src={'/delete.png'} height={25} width={25} alt='delete icon' onClick={DeleteFile(file, folder.id)} />
+                  </div>
                 </div>
-                </Link>
-              ));
+              );
+            });
             }
           })}
+          <AddFile folderRecord={folders.filter(folder => folder.folderName === 'root')} />
         </>
       )}
     </div>
