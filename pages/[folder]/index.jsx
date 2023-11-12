@@ -2,11 +2,28 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import PocketBase from 'pocketbase';
+import { useEffect, useState } from 'react';
+import getFolderStats from '@/components/deleteFile';
 
 const pb = new PocketBase('http://127.0.0.1:8090');
 
 
- export default function ClassPage({ folderData }) {         
+ export default function ClassPage({ folderData }) {
+  const [folders, setFolders] = useState([]);    
+  useEffect(() => {
+    // needs to fix to get only folders that belong to the current user
+    async function getFolders() {
+        try {
+          const folderPromises = folderData.folders.map(folderID => getFolderStats({ folderID }));
+          const resultList = await Promise.all(folderPromises);
+          setFolders(resultList);
+        } catch (error) {
+          console.error('Error fetching folders:', error);
+        }
+    }
+    
+    getFolders();
+  }, [pb]);     
     return (
         <>
             <Head>
@@ -29,7 +46,23 @@ const pb = new PocketBase('http://127.0.0.1:8090');
                   </div>
                 </Link>
               )
-          })};
+          })}
+            {folders && folders.map((folder) => {
+          const date = new Date(folder.updated);
+            return (
+              <Link key={folder.id} href={folder.id}>
+                <div className='flex bg-red-600 p-4 m-4 rounded rounded-xl'>
+                  <Image src="/folder.png" height={60} width={60} alt='folder icon' />
+                  <div className="flex flex-col">
+                    <p className='ml-6 font-semibold text-sm'>
+                      Last updated: {date.toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                    <p className='ml-6 mt-1 text-2xl font-semibold'>{folder.folderName}</p>
+                  </div>
+                </div>
+              </Link>
+            );
+        })}
         <Link href={"/"}>
         <button type="button" className="ml-4 mt-2 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800">Back</button>
         </Link>
