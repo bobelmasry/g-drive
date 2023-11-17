@@ -4,17 +4,22 @@ import PocketBase from 'pocketbase';
 import Image from 'next/image';
 import Link from 'next/link';
 import AddFile from '@/components/addFile';
-import DeleteFile from '@/components/deleteFile';
-import getFolderStats from '@/components/deleteFile';
+import CreateFolder from '@/components/createFolder';
+import getFolderStats from '@/components/getFolderStats';
+import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
+import { useRouter } from 'next/router';
+import { pocketbaseAddress } from '@/components/constants';
 
 const Home = () => {
-  const pb = new PocketBase('http://127.0.0.1:8090');
+  const pb = new PocketBase(pocketbaseAddress);
+  const router = useRouter()
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [id, setID] = useState('');
   const [session, setSession] = useState(false);
   const [rootGotten, setRootGotten] = useState(false);
+  const [folderModalShown, setFolderModalShown] = useState(false);
   const [folders, setFolders] = useState([]);
   const [root, setRoot] = useState([]);
   const date = new Date(root.updated);
@@ -29,6 +34,22 @@ const Home = () => {
       setSession(true);
     } catch (error) {
       console.error('Authentication error:', error);
+    }
+  }
+
+   async function deleteFileFromFolder({ folderID, filename, event }) {
+    event.preventDefault()
+  
+    try {
+      await pb.collection("folders").update(`${folderID.toString()}`, {
+        "files-": [filename],
+      });
+  
+      console.log(`File '${filename}' deleted from folder '${folderID}'`);
+      router.reload()
+    } catch (error) {
+      console.error("Error deleting file:", error.message);
+      // Handle the error as needed (log, throw, etc.)
     }
   }
 
@@ -117,12 +138,15 @@ return (
               const sanitizedFilename = filename + extension;
 
               return (
-                <Link key={index} href={`http://127.0.0.1:8090/api/files/folders/${root.id}/${file}?thumb=100x300`}>
+                <div key={index} className='flex'>
+                <Link  href={`${pocketbaseAddress}/api/files/folders/${root.id}/${file}?thumb=100x300`}>
                   <div className='flex bg-blue-600 p-4 m-4 rounded rounded-xl'>
                     <Image src="/file.png" height={60} width={60} alt='file icon' />
                     <p className='ml-4 mt-1 text-2xl font-semibold'>{sanitizedFilename}</p>
                   </div>
                 </Link>
+                <DeleteOutlineOutlinedIcon className='mt-10' onClick={(event) => deleteFileFromFolder({ folderID: root.id, filename: file, event })} />
+                </div>
               );
             })}
           </>
@@ -145,6 +169,17 @@ return (
             );
           }
         })}
+        {session &&
+        <>
+        <AddFile folderRecord={root} />
+        <button onClick={() => setFolderModalShown(!folderModalShown)} className="mt-4 block text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">
+          Create Folder
+        </button>
+        {folderModalShown &&
+        <CreateFolder currentFolderID={root.id} />
+        }
+        </>
+        }
       </div>
     </div>
   </>

@@ -1,21 +1,22 @@
 import { FileInput } from 'flowbite-react';
 import { useRouter } from 'next/router';
 import PocketBase from 'pocketbase';
+import { pocketbaseAddress } from "@/components/constants";
 
 export default function AddFile({ folderRecord }) {
     const router = useRouter();
 
     async function upload(event) {
         // Create a PocketBase instance
-        const pb = new PocketBase('http://127.0.0.1:8090');
+        const pb = new PocketBase(pocketbaseAddress);
 
         // Capture the selected file
         const selectedFile = event.target.files[0]; // Access the first selected file
 
         if (selectedFile) {
             // Update the folder record in PocketBase
-            const updatedRecord = await pb.collection('folders').update(folderRecord[0].id, {
-                files: [...folderRecord[0].files, selectedFile],
+            const updatedRecord = await pb.collection('folders').update(folderRecord.id, {
+                files: [...folderRecord.files, selectedFile],
             });
             
             if (updatedRecord) {
