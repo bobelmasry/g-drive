@@ -15,6 +15,9 @@ const pb = new PocketBase(pocketbaseAddress);
 
  export default function ClassPage({ folderData }) {
   const router = useRouter()
+  const currentUrl = router.asPath;
+  const withoutLastSegment = router.asPath.split('$').slice(0, -1).join('$');
+  const targetUrl = withoutLastSegment || '/';
 
   const [folders, setFolders] = useState([]);   
   const [folderModalShown, setFolderModalShown] = useState(false); 
@@ -79,7 +82,7 @@ const pb = new PocketBase(pocketbaseAddress);
             {folders && folders.map((folder) => {
           const date = new Date(folder.updated);
             return (
-              <Link key={folder.id} href={folder.id}>
+              <Link key={folder.id} href={`${currentUrl}$${folder.id}`}>
                 <div className='flex bg-red-600 p-4 m-4 rounded rounded-xl'>
                   <Image src="/folder.png" height={60} width={60} alt='folder icon' />
                   <div className="flex flex-col">
@@ -99,7 +102,7 @@ const pb = new PocketBase(pocketbaseAddress);
         {folderModalShown &&
         <CreateFolder currentFolderID={folderData.id} />
         }
-        <Link href={"/"}>
+        <Link href={targetUrl}>
         <button type="button" className="ml-4 mt-2 text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800">Back</button>
         </Link>
         </div>
@@ -110,12 +113,11 @@ const pb = new PocketBase(pocketbaseAddress);
 
 
 export async function getServerSideProps({ params }) {
-  // needs updating to have folder inside a folder
-  // thought of using a character like $ to separate folder names like parent$child so the getServerSideProps here would need to adjust for that
-  // to remove any charachters before the $ so to get the current folder
-  // although path would be needed for "back" button so to redirect from grandparent$parent$child to $grandparent$parent
-  // this approach is to avoid infinite dynamic routing which I could not find a soltution for
-  const record = await pb.collection('folders').getFirstListItem(`id="${params.folder.toString()}"`);
+  // Extract the part of the folder ID to the right of the rightmost dollar sign ('$')
+  const folderId = params.folder.toString().split('$').pop();
+
+  // Retrieve the record using the modified folderId
+  const record = await pb.collection('folders').getFirstListItem(`id="${folderId}"`);
   
   const folderData = record;
 
